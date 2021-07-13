@@ -3,19 +3,17 @@ import setuptools
 with open("readme.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-python_versions = '>=3.6, <3.9'  # probably other versions work as well
+python_versions = '>=3.6, <3.9'  # probably newer versions work as well
 
 requirements_default = [
     'numpy',  # for all datastructures
-    'matplotlib',  # vis
+    'scipy',  # recommended by numpy-quaternion
     'numba',  # speedup for numpy-quaternion
     'numpy-quaternion',  # numpy integration for quaternions
     'tqdm',  # progress bars
     'pybullet',  # for the simulation module
     'attrdict',
-    'collections',
-    'joblib',
-    'gc'
+    'joblib'
 ]
 
 setuptools.setup(
