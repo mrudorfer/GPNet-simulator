@@ -3,10 +3,8 @@ import gc
 import numpy as np
 import os
 import pybullet
-import torch
 from joblib import Parallel, delayed
 from .AutoGraspSimpleShapeCore import AutoGraspSimple
-from .gripperPoseTransform import matrix2quaternion
 
 
 class AutoGraspUtil(object):
@@ -22,20 +20,6 @@ class AutoGraspUtil(object):
         gc.collect()
         self.annotationDict = {}
 
-    # objId: str (len <= 32)
-    # rotation: torch.tensor [N, 3, 3]
-    # translation: torch.tensor [N, 3]
-    def addObject(self, objId, rotation, translation):
-        # add object
-        self.objIdList.append(objId)
-        # add annotation
-        annotationNum = rotation.shape[0]
-        quaternion = matrix2quaternion(rotation.reshape(annotationNum, 9))
-        # fit the pybullet environment
-        quaternion = quaternion[:, [1, 2, 3, 0]]
-        fakeLength = torch.zeros((annotationNum, 1))
-        annotation = torch.cat((fakeLength, translation, quaternion), dim=1)
-        self.annotationDict[objId] = annotation.numpy()
 
     # objId: str (len <= 32)
     # quaternion: ndarray [N, 4]

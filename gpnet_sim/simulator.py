@@ -1,6 +1,8 @@
 import argparse
 import os
 import numpy as np
+import quaternion
+
 from .AutoGraspShapeCoreUtil import AutoGraspUtil
 
 
@@ -89,15 +91,13 @@ def find_test_files(directory):
 def z_move(c, q, z_move_length=0.015):
     """
     need to move by plus 15mm away from the center to make simulations
-    :param c: (n, 3)
-    :param q: (n, 4)
+    :param c: (n, 3) ndarray translations
+    :param q: (n, 4) ndarray quaternions (w, x, y, z)
     :param z_move_length: float, how much to move in each grasps z direction
     """
-    import burg_toolkit as burg
-    # todo
-    graspset = burg.grasp.GraspSet.from_translations_and_quaternions(c, q)
-    offsets = graspset.rotation_matrices[:, :, 2] * z_move_length
-    return graspset.translations + offsets
+    rot_mats = quaternion.as_rotation_matrix(quaternion.from_float_array(q))
+    offsets = rot_mats[:, :, 2] * z_move_length
+    return c + offsets
 
 
 def main_simulator(cfg):
