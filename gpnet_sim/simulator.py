@@ -14,9 +14,9 @@ def parse_args():
     parser.add_argument('-w', "--width", action="store_true", dest="width", default=False,
                         help="turn on this param if test file contains width.")
     parser.add_argument('--gripperFile',
-                        default=os.path.dirname(__file__) + '../gpnet_data/gripper/parallel_simple.urdf',
+                        default=os.path.join(os.path.dirname(__file__), '../gpnet_data/gripper/parallel_simple.urdf'),
                         type=str, metavar='FILE', help='gripper file')
-    parser.add_argument('--objMeshRoot', default=os.path.dirname(__file__) + '../gpnet_data/urdf',
+    parser.add_argument('--objMeshRoot', default=os.path.join(os.path.dirname(__file__), '../gpnet_data/urdf'),
                         type=str, metavar='PATH', help='obj mesh path')
     parser.add_argument('-v', '--visual', default=False, type=bool, metavar='VIS',
                         help='switch for visual inspection of grasps (processNum will be overridden)')
@@ -47,8 +47,8 @@ def getObjStatusAndAnnotation(testFile, haveWidth=False):
                 # begin
                 objCounter += 1
                 objIdList.append(objId)
-                quaternionDict[objId] = np.empty(shape=(0, 4), dtype=np.float)
-                centerDict[objId] = np.empty(shape=(0, 3), dtype=np.float)
+                quaternionDict[objId] = np.empty(shape=(0, 4), dtype=float)
+                centerDict[objId] = np.empty(shape=(0, 3), dtype=float)
                 annotationCounter = -1
             # read annotation
             else:
@@ -101,6 +101,14 @@ def z_move(c, q, z_move_length=0.015):
 
 
 def main_simulator(cfg):
+    """
+    Main simulator method.
+    Pass this all described arguments as an attribute dictionary (where each item can be accessed like an attribute).
+    See possible attributes above.
+
+    :param cfg: an AttrDict
+    :return: (4) top 10, top 30, top 50 and top 100 precision
+    """
     objMeshRoot = cfg.objMeshRoot
     processNum = cfg.processNum
     gripperFile = cfg.gripperFile
