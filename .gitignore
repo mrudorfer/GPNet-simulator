@@ -56,3 +56,5 @@ wheels/
 # adding some directories for the sphinx documentation
 docs/_build
 
+# predictions that have been made on the provided sample data
+gpnet_data/prediction/*.csv
