@@ -1,8 +1,8 @@
 import numpy as np
 import trimesh
 from copy import deepcopy
-from simulateTest.Quaternion import Quaternion
-from simulateTest.visualization import getWorldMeshList
+from .Quaternion import Quaternion
+from .visualization import getWorldMeshList
 
 
 # for a gripper :

@@ -1,64 +1,29 @@
 import argparse
 import os
 import numpy as np
-from simulateTest.AutoGraspShapeCoreUtil import AutoGraspUtil
+from .AutoGraspShapeCoreUtil import AutoGraspUtil
 
 
-# TODO: Check modification Martin if fits test_all.py and eval_all.py
 def parse_args():
-    # parser = argparse.ArgumentParser(description='ShapeNetSem Grasp testing')
-    # parser.add_argument('-t', '--testFile', default='prediction/500ntop10.txt', type=str, metavar='FILE', help='testFile path')
-    # # parser.add_argument('-n', '--samplePerObject', default=10, type=int, metavar='N', help='sample num per object')
-    # parser.add_argument('-p', '--processNum', default=18, type=int, metavar='N', help='process num using')
-    # parser.add_argument('-w', '--haveWidth', default=1, type=int, metavar='N', help='0 : no width ; 1 : have width')
-    # parser.add_argument('--gripperFile', default='/data/shapeNet/annotator2/parallel_simple.urdf', type=str, metavar='FILE', help='gripper file')
-    # parser.add_argument('--objMeshRoot', default='/data/shapeNet/urdf', type=str, metavar='PATH', help='obj mesh path')
-
     parser = argparse.ArgumentParser(description='ShapeNetSem Grasp testing')
-    parser.add_argument('-t', '--testFile', default='gpnet_data/prediction/nms_poses_view0.txt', type=str, metavar='FILE',
-                        help='testFile path')
-    # parser.add_argument('-n', '--samplePerObject', default=10, type=int, metavar='N', help='sample num per object')
+    parser.add_argument('-t', '--testFile', default='gpnet_data/prediction/nms_poses_view0.txt',
+                        type=str, metavar='FILE', help='testFile path')
     parser.add_argument('-p', '--processNum', default=10, type=int, metavar='N', help='process num using')
-    # parser.add_argument('-w', '--haveWidth', default=0, type=int, metavar='N', help='0 : no width ; 1 : have width')
     parser.add_argument('-w', "--width", action="store_true", dest="width", default=False,
                         help="turn on this param if test file contains width.")
-    parser.add_argument('--gripperFile', default='gpnet_data/gripper/parallel_simple.urdf', type=str, metavar='FILE',
-                        help='gripper file')
-    parser.add_argument('--objMeshRoot', default='gpnet_data/urdf', type=str, metavar='PATH', help='obj mesh path')
+    parser.add_argument('--gripperFile',
+                        default=os.path.dirname(__file__) + '../gpnet_data/gripper/parallel_simple.urdf',
+                        type=str, metavar='FILE', help='gripper file')
+    parser.add_argument('--objMeshRoot', default=os.path.dirname(__file__) + '../gpnet_data/urdf',
+                        type=str, metavar='PATH', help='obj mesh path')
     parser.add_argument('-v', '--visual', default=False, type=bool, metavar='VIS',
-                        help='switch for visual inspection of grasps (no parallelisation, processNum will be overridden)')
+                        help='switch for visual inspection of grasps (processNum will be overridden)')
     parser.add_argument('-d', '--dir', default='None', type=str, metavar='PATH',
-                        help='if this option is active, will search for test files in all subdirectories and compile a' +
+                        help='if this option is active, will search for test files in all subdirectories and compile' +
                         ' complete results file.')
-    parser.add_argument('-l', '--limit', default=None, type=int, metavar='LIMIT',
-                    help='if set, NMS will be disabled and the provided number of predictions will' +
-                         ' be simulated per object')
     parser.add_argument('-z', '--z_move', default=False, type=bool,
                         help='if True, all grasp centers will be moved -15mm in their respective z-direction')
     return parser.parse_args()
-
-
-
-# TODO: Martin?
-def getObjStatusAndAnnotation_fromNPZ(npz_dir, limit=None):
-    obj_id_list = []
-    quaternion_dict = {}
-    center_dict = {}
-
-    for subdir, dirs, files in os.walk(npz_dir):
-        for file in files:
-            if file[-4:] == '.npz':
-                fn = os.path.join(subdir, file)
-                print('parsing', fn)
-                shape = file[:-4]
-                with np.load(fn) as data:
-                    # sort by score
-                    order = np.argsort(-data['scores'])
-                    center_dict[shape] = data['centers'][order][:limit]
-                    quaternion_dict[shape] = data['quaternions'][order][:limit]
-                    obj_id_list.append(shape)
-
-    return quaternion_dict, center_dict, obj_id_list
 
 
 def getObjStatusAndAnnotation(testFile, haveWidth=False):
@@ -129,6 +94,7 @@ def z_move(c, q, z_move_length=0.015):
     :param z_move_length: float, how much to move in each grasps z direction
     """
     import burg_toolkit as burg
+    # todo
     graspset = burg.grasp.GraspSet.from_translations_and_quaternions(c, q)
     offsets = graspset.rotation_matrices[:, :, 2] * z_move_length
     return graspset.translations + offsets
@@ -139,11 +105,9 @@ def main_simulator(cfg):
     processNum = cfg.processNum
     gripperFile = cfg.gripperFile
     haveWidth = cfg.width
-    limit = cfg.limit
-    use_all_grasps = False if limit is None else True
 
     # check if directory-option has been used
-    if cfg.dir == 'None':
+    if cfg.dir is None or cfg.dir == 'None':
         testFiles = [cfg.testFile]
         dir_log_fn = None
     else:
@@ -157,13 +121,8 @@ def main_simulator(cfg):
         processNum = 1
 
     for testInfoFile in testFiles:
-        if use_all_grasps:
-            logFile = os.path.join(os.path.dirname(testInfoFile), f'view0_{limit}_log.csv')
-            quaternionDict, centerDict, objIdList = getObjStatusAndAnnotation_fromNPZ(
-                os.path.join(os.path.dirname(testInfoFile), 'view0/'), limit=limit)
-        else:
-            logFile = testInfoFile[:-4] + '_log.csv'
-            quaternionDict, centerDict, objIdList = getObjStatusAndAnnotation(testInfoFile, haveWidth)
+        logFile = testInfoFile[:-4] + '_log.csv'
+        quaternionDict, centerDict, objIdList = getObjStatusAndAnnotation(testInfoFile, haveWidth)
 
         # print(f'objects: {objIdList}')
         # print(f'quaternions: {quaternionDict}')

@@ -5,8 +5,8 @@ import os
 import pybullet
 import torch
 from joblib import Parallel, delayed
-from simulateTest.AutoGraspSimpleShapeCore import AutoGraspSimple
-from simulateTest.gripperPoseTransform import matrix2quaternion
+from .AutoGraspSimpleShapeCore import AutoGraspSimple
+from .gripperPoseTransform import matrix2quaternion
 
 
 class AutoGraspUtil(object):

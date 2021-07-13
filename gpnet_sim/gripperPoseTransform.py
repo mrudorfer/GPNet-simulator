@@ -3,7 +3,7 @@ import math
 import numpy as np
 import torch
 import torch.nn.functional as F
-from simulateTest.gripperSimpleCollision import GripperSimipleCollision
+from .gripperSimpleCollision import GripperSimipleCollision
 
 
 # pytorch version
