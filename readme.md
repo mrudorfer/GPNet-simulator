@@ -51,3 +51,5 @@ top10, top30, top50, top100 = gpnet_sim.simulate(conf)
 ```
 
 See `gpnet_sim/simulator.py` for complete list of arguments.
+
+Some statistics will be written on the console, the full results will be stored to a csv log file (at same location as input file).
