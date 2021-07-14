@@ -373,7 +373,3 @@ class AutoGraspSimple(object):
             currentBasePosition, _ = self.__getLinkPositionAndOrientation(self.dummy_center_indicator_link_index)
             if math.fabs(currentBasePosition[2] - basePosition[2]) < 1e-4:
                 return True
-
-
-if __name__ == "__main__":
-    pass

@@ -1,9 +1,11 @@
 import gc
+import os
 
 import numpy as np
-import os
 import pybullet
 from joblib import Parallel, delayed
+from tqdm import tqdm
+
 from .AutoGraspSimpleShapeCore import AutoGraspSimple
 
 
@@ -67,9 +69,7 @@ class AutoGraspUtil(object):
                 parallel(delayed(AutoGraspUtil.testAnnotation)
                          (objId, objIndex, annotation, annotationIndex, gripperFile, logFile, objMeshRoot)
                          for (objId, objIndex, annotation, annotationIndex) in
-                         zip(runningObjIdList, runningObjIndexList, runningAnnotaionList,
-                             runningAnnotaionIndexList)
-                         )
+                         zip(runningObjIdList, runningObjIndexList, runningAnnotaionList, runningAnnotaionIndexList))
             self.__annotationMemoryReallocate()
 
     def __getRunningListSplit(self, objIdListSplit, objIndexShift):
@@ -96,12 +96,13 @@ class AutoGraspUtil(object):
         # erase log file
         open(logFile, 'w').close()
         objMeshRoot = objMeshRoot
+        print('starting simulation...')
         with Parallel(n_jobs=processNum, backend='multiprocessing') as parallel:
             parallel(delayed(AutoGraspUtil.testAnnotation)
                      (objId, objIndex, annotation, annotationIndex, gripperFile, logFile, objMeshRoot, visual)
                      for (objId, objIndex, annotation, annotationIndex) in
-                     zip(runningObjIdList, runningObjIndexList, runningAnnotaionList,
-                         runningAnnotaionIndexList)
+                     tqdm(zip(runningObjIdList, runningObjIndexList, runningAnnotaionList, runningAnnotaionIndexList),
+                          total=len(runningObjIdList))
                      )
 
     def __getRunningList(self):
@@ -130,8 +131,9 @@ class AutoGraspUtil(object):
             gripperFile=gripperFile,
             visual=visual,
         )
-        print('objId\t', objId, '\tobjIdx\t', str(objIndex), '\tannotationIdx\t', str(annotationIndex), '\tstatus\t',
-              str(status))
+        #print('objId\t', objId, '\tobjIdx\t', str(objIndex), '\tannotationIdx\t', str(annotationIndex), '\tstatus\t',
+        #      str(status))
+        # todo: progress bar ?
         simulatorParamStrList = [str(i) for i in annotation]
         logInfo = [objId, str(annotationIndex), str(status)]
         simulatorParamStrList = logInfo + simulatorParamStrList

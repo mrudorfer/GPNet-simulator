@@ -2,13 +2,15 @@ import argparse
 import os
 import numpy as np
 import quaternion
+from attrdict import AttrDict
 
 from .AutoGraspShapeCoreUtil import AutoGraspUtil
 
 
-def parse_args():
+def parser():
     parser = argparse.ArgumentParser(description='ShapeNetSem Grasp testing')
-    parser.add_argument('-t', '--testFile', default='gpnet_data/prediction/nms_poses_view0.txt',
+    parser.add_argument('-t', '--testFile',
+                        default=os.path.join(os.path.dirname(__file__), '../gpnet_data/prediction/nms_poses_view0.txt'),
                         type=str, metavar='FILE', help='testFile path')
     parser.add_argument('-p', '--processNum', default=10, type=int, metavar='N', help='process num using')
     parser.add_argument('-w', "--width", action="store_true", dest="width", default=False,
@@ -20,12 +22,21 @@ def parse_args():
                         type=str, metavar='PATH', help='obj mesh path')
     parser.add_argument('-v', '--visual', default=False, type=bool, metavar='VIS',
                         help='switch for visual inspection of grasps (processNum will be overridden)')
-    parser.add_argument('-d', '--dir', default='None', type=str, metavar='PATH',
+    parser.add_argument('-d', '--dir', default=None, type=str, metavar='PATH',
                         help='if this option is active, will search for test files in all subdirectories and compile' +
-                        ' complete results file.')
+                             ' complete results file.')
     parser.add_argument('-z', '--z_move', default=False, type=bool,
                         help='if True, all grasp centers will be moved -15mm in their respective z-direction')
-    return parser.parse_args()
+
+    return parser
+
+
+def parse_args():
+    return parser().parse_args()
+
+
+def default_conf():
+    return AttrDict(vars(parser().parse_args([])))
 
 
 def getObjStatusAndAnnotation(testFile, haveWidth=False):
@@ -100,7 +111,7 @@ def z_move(c, q, z_move_length=0.015):
     return c + offsets
 
 
-def main_simulator(cfg):
+def simulate(cfg):
     """
     Main simulator method.
     Pass this all described arguments as an attribute dictionary (where each item can be accessed like an attribute).
@@ -109,6 +120,12 @@ def main_simulator(cfg):
     :param cfg: an AttrDict
     :return: (4) top 10, top 30, top 50 and top 100 precision
     """
+    print('gpnet_simulator config:')
+    if isinstance(cfg, argparse.Namespace):
+        cfg = AttrDict(vars(cfg))
+    for key, value in cfg.items():
+        print(f'\t{key}:\t{value}')
+
     objMeshRoot = cfg.objMeshRoot
     processNum = cfg.processNum
     gripperFile = cfg.gripperFile
@@ -129,6 +146,7 @@ def main_simulator(cfg):
         processNum = 1
 
     for testInfoFile in testFiles:
+        print('parsing test file: ', testInfoFile)
         logFile = testInfoFile[:-4] + '_log.csv'
         quaternionDict, centerDict, objIdList = getObjStatusAndAnnotation(testInfoFile, haveWidth)
 
@@ -145,7 +163,6 @@ def main_simulator(cfg):
             if cfg.z_move:
                 # perform the z move
                 c = z_move(c, q)
-                print('moving z for simulation')
             simulator.addObject2(
                 objId=objId,
                 quaternion=q,
@@ -162,12 +179,18 @@ def main_simulator(cfg):
 
         annotationSuccessDict = simulator.getSuccessData(logFile=logFile)
         # print(top 10% 30% 50% 100%)
-        print(annotationSuccessDict)
+        # print(annotationSuccessDict)
+        print('results per object:')
+        for key, arr in annotationSuccessDict.items():
+            print(f'\t{key[:15] + "...":<18} success rate: {np.mean(arr)}')
         top10, top30, top50, top100 = simulator.getStatistic(annotationSuccessDict)
-        print('top10:\t', top10, '\ntop30:\t', top30, '\ntop50:\t', top50, '\ntop100:\t', top100)
+        print('overall success rates:')
+        print('\ttop10:\t', top10, '\n\ttop30:\t', top30, '\n\ttop50:\t', top50, '\n\ttop100:\t', top100)
 
         details, summary = simulator.get_simulation_summary(logFile)
-        print(summary)
+        print('absolute numbers by outcome:')
+        for key, value in summary.items():
+            print(f'\t{key}: {value}')
 
         if dir_log_fn is not None:
             with open(dir_log_fn, 'a') as log:
@@ -183,9 +206,9 @@ def main_simulator(cfg):
                 [log.write(f'{summary[key]}\t') for key in keys]
                 log.write('\n\n')
 
-        return (top10, top30, top50, top100)
+        return top10, top30, top50, top100
 
 
 if __name__ == "__main__":
     args = parse_args()
-    main_simulator(cfg=args)
+    simulate(cfg=args)
