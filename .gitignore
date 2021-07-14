@@ -57,4 +57,4 @@ wheels/
 docs/_build
 
 # predictions that have been made on the provided sample data
-*.csv
+gpnet_data/prediction/nms_poses_view0_log.csv
