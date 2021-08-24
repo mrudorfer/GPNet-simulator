@@ -1,5 +1,6 @@
 import gc
 import os
+import csv
 
 import numpy as np
 import pybullet
@@ -325,3 +326,56 @@ class AutoGraspUtil(object):
             return 'time out'
         else:
             return 'unknown status'
+
+
+def read_sim_csv_file(filename, keep_num=None, initial_array_size=2000):
+    """
+    This reads the csv log file created during simulation.
+
+    :param filename: the filename of the simulation's log file output
+    :param keep_num: at most this number of grasps is reported (as of annotation idx order)
+    :param initial_array_size: an estimate of how many grasps there will be per object to speed up things
+
+    :return: returns a dict with shape id as keys and np array as value.
+             the np array is of shape (n, 10): 0:3 pos, 3:7 quat, annotation id, sim result, sim success
+             keeps only keep_num entries (as of annotation idx order). quaternion is in w,x,y,z
+    """
+
+    print(f'reading csv data from {filename}')
+    sim_data = {}
+    counters = {}
+    with open(filename, 'r') as csv_file:
+        reader = csv.reader(csv_file, delimiter=',')
+        for row in tqdm(reader):
+            shape = row[0]
+            if shape not in sim_data.keys():
+                # we do not know the array length in advance, so start with 10k
+                data_array = np.zeros((initial_array_size, 10))
+                sim_data[shape] = data_array
+                counters[shape] = 0
+            elif counters[shape] == len(sim_data[shape]):
+                sim_data[shape] = np.resize(sim_data[shape], (len(sim_data[shape]) + initial_array_size, 10))
+
+            sim_data[shape][counters[shape]] = [
+                float(row[4]),  # pos: x, y, z
+                float(row[5]),
+                float(row[6]),
+                float(row[10]),  # quat: w, x, y, z, converted from pybullet convention
+                float(row[7]),
+                float(row[8]),
+                float(row[9]),
+                int(row[1]),  # annotation id
+                int(row[2]),  # simulation result
+                int(row[2]) == 0  # simulation success flag
+            ]
+            counters[shape] += 1
+
+    # now reduce arrays to their actual content
+    for key in sim_data.keys():
+        sim_data[key] = np.resize(sim_data[key], (counters[key], 10))
+        # also sort by annotation id
+        order = np.argsort(sim_data[key][:, 7])
+        sim_data[key] = sim_data[key][order]
+        sim_data[key] = sim_data[key][:keep_num]
+
+    return sim_data

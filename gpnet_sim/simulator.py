@@ -2,9 +2,10 @@ import argparse
 import os
 import numpy as np
 import quaternion
+import tempfile
 from attrdict import AttrDict
 
-from .AutoGraspShapeCoreUtil import AutoGraspUtil
+from . import AutoGraspShapeCoreUtil
 
 
 def parser():
@@ -155,7 +156,7 @@ def simulate(cfg):
         # print(f'centers: {centerDict}')
 
         open(logFile, 'w').close()
-        simulator = AutoGraspUtil()
+        simulator = AutoGraspShapeCoreUtil.AutoGraspUtil()
 
         for objId in objIdList:
             q = quaternionDict[objId]
@@ -207,6 +208,74 @@ def simulate(cfg):
                 log.write('\n\n')
 
         return top10, top30, top50, top100
+
+
+def simulate_direct(cfg, shape, centers, quats):
+    """
+    This is a direct simulation method that does not require writing things into a file.
+    It does not produce a log file (although a temporary file is used) and is only capable of processing grasps
+    for one specific object.
+    
+    :param cfg: a config file as in simulate method, except some attributes are not used
+    :param shape: the object id
+    :param centers: np array with grasp centers
+    :param quats: np array with grasp quaternions
+
+    :return: binary success array, dict with error types
+    """
+    print('gpnet_simulator config:')
+    if isinstance(cfg, argparse.Namespace):
+        cfg = AttrDict(vars(cfg))
+    for key, value in cfg.items():
+        print(f'\t{key}:\t{value}')
+
+    objMeshRoot = cfg.objMeshRoot
+    processNum = cfg.processNum
+    gripperFile = cfg.gripperFile
+
+    # this creates a logfile in the tmp dir of the operating system
+    logFileHandle, logFile = tempfile.mkstemp(suffix='.log', text=True)
+
+    open(logFile, 'w').close()
+    simulator = AutoGraspShapeCoreUtil.AutoGraspUtil()
+
+    if cfg.z_move:
+        centers = z_move(centers, quats)
+
+    simulator.addObject2(
+        objId=shape,
+        quaternion=quats,
+        translation=centers
+    )
+
+    simulator.parallelSimulation(
+        logFile=logFile,
+        objMeshRoot=objMeshRoot,
+        processNum=processNum,
+        gripperFile=gripperFile
+    )
+
+    result_dict = AutoGraspShapeCoreUtil.read_sim_csv_file(logFile, initial_array_size=len(centers))
+    grasps = result_dict[shape]
+    sim_outcome = grasps[:, 8]
+    sim_success = grasps[:, 9]
+
+    print('simulation results for shape', shape)
+    print(f'\tsuccess rate: {np.mean(sim_success)}')
+
+    status_code, counts = np.unique(sim_outcome, return_counts=True)
+    summary = {}
+    for i in range(len(status_code)):
+        summary[simulator.get_status_string(status_code[i])] = counts[i]
+
+    print('absolute numbers by outcome:')
+    for key, value in summary.items():
+        print(f'\t{key}: {value}')
+
+    os.close(logFileHandle)
+    os.remove(logFile)
+
+    return sim_success, summary
 
 
 if __name__ == "__main__":
