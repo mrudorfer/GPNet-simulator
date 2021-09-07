@@ -11,8 +11,12 @@ The original code has only been modified to allow for better usability.
 
 ```
 cd GPNet-simulator
-pip install .
+pip install -e .
 ```
+
+Note that it is recommended to install the simulator in editable mode.
+This way the simulator can find the object models and gripper models contained in the package.
+If you install without editable mode, you will need to provide the correct paths yourself.
 
 ## Usage
 
