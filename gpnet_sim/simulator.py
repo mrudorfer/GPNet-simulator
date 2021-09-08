@@ -28,6 +28,7 @@ def parser():
                              ' complete results file.')
     parser.add_argument('-z', '--z_move', default=False, type=bool,
                         help='if True, all grasp centers will be moved -15mm in their respective z-direction')
+    parser.add_argument('--verbose', action='store_true', help='prints some output on console')
 
     return parser
 
@@ -121,11 +122,12 @@ def simulate(cfg):
     :param cfg: an AttrDict
     :return: (4) top 10, top 30, top 50 and top 100 precision
     """
-    print('gpnet_simulator config:')
-    if isinstance(cfg, argparse.Namespace):
-        cfg = AttrDict(vars(cfg))
-    for key, value in cfg.items():
-        print(f'\t{key}:\t{value}')
+    if cfg.verbose:
+        print('gpnet_simulator config:')
+        if isinstance(cfg, argparse.Namespace):
+            cfg = AttrDict(vars(cfg))
+        for key, value in cfg.items():
+            print(f'\t{key}:\t{value}')
 
     objMeshRoot = cfg.objMeshRoot
     processNum = cfg.processNum
@@ -147,7 +149,8 @@ def simulate(cfg):
         processNum = 1
 
     for testInfoFile in testFiles:
-        print('parsing test file: ', testInfoFile)
+        if cfg.verbose:
+            print('parsing test file: ', testInfoFile)
         logFile = testInfoFile[:-4] + '_log.csv'
         quaternionDict, centerDict, objIdList = getObjStatusAndAnnotation(testInfoFile, haveWidth)
 
@@ -179,19 +182,21 @@ def simulate(cfg):
         )
 
         annotationSuccessDict = simulator.getSuccessData(logFile=logFile)
-        # print(top 10% 30% 50% 100%)
-        # print(annotationSuccessDict)
-        print('results per object:')
-        for key, arr in annotationSuccessDict.items():
-            print(f'\t{key[:15] + "...":<18} success rate: {np.mean(arr)}')
         top10, top30, top50, top100 = simulator.getStatistic(annotationSuccessDict)
-        print('overall success rates:')
-        print('\ttop10:\t', top10, '\n\ttop30:\t', top30, '\n\ttop50:\t', top50, '\n\ttop100:\t', top100)
+
+        if cfg.verbose:
+            print('results per object:')
+            for key, arr in annotationSuccessDict.items():
+                print(f'\t{key[:15] + "...":<18} success rate: {np.mean(arr)}')
+
+            print('overall success rates:')
+            print('\ttop10:\t', top10, '\n\ttop30:\t', top30, '\n\ttop50:\t', top50, '\n\ttop100:\t', top100)
 
         details, summary = simulator.get_simulation_summary(logFile)
-        print('absolute numbers by outcome:')
-        for key, value in summary.items():
-            print(f'\t{key}: {value}')
+        if cfg.verbose:
+            print('absolute numbers by outcome:')
+            for key, value in summary.items():
+                print(f'\t{key}: {value}')
 
         if dir_log_fn is not None:
             with open(dir_log_fn, 'a') as log:
@@ -215,7 +220,7 @@ def simulate_direct(cfg, shape, centers, quats):
     This is a direct simulation method that does not require writing things into a file.
     It does not produce a log file (although a temporary file is used) and is only capable of processing grasps
     for one specific object.
-    
+
     :param cfg: a config file as in simulate method, except some attributes are not used
     :param shape: the object id
     :param centers: np array with grasp centers
@@ -260,17 +265,19 @@ def simulate_direct(cfg, shape, centers, quats):
     sim_outcome = grasps[:, 8]
     sim_success = grasps[:, 9]
 
-    print('simulation results for shape', shape)
-    print(f'\tsuccess rate: {np.mean(sim_success)}')
+    if cfg.verbose:
+        print('simulation results for shape', shape)
+        print(f'\tsuccess rate: {np.mean(sim_success)}')
 
     status_code, counts = np.unique(sim_outcome, return_counts=True)
     summary = {}
     for i in range(len(status_code)):
         summary[simulator.get_status_string(status_code[i])] = counts[i]
 
-    print('absolute numbers by outcome:')
-    for key, value in summary.items():
-        print(f'\t{key}: {value}')
+    if cfg.verbose:
+        print('absolute numbers by outcome:')
+        for key, value in summary.items():
+            print(f'\t{key}: {value}')
 
     os.close(logFileHandle)
     os.remove(logFile)
