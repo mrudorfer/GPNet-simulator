@@ -5,7 +5,7 @@ The original code can be found in the [GPNet repository](https://github.com/CZ-W
 which contains the Pytorch implementation of the GPNet paper:
 [Grasp Proposal Networks: An End-to-End Solution for Visual Learning of Robotic Grasps](https://arxiv.org/abs/2009.12606).
 
-The original code has only been modified to allow for better usability.
+The original code has only been modified to allow for better usability and unused files have been removed.
 
 ## Installation
 
@@ -31,6 +31,10 @@ x, y, z, rw, rx, ry, rz
 ...
 ```
 
+Note that for the simulation to work properly, all grasps have to be moved along their z-axis 15mm
+towards the object. This can be accomplished by using the option `--z_move`.
+Per default this is switched off.
+
 Simulation can be used either via CLI:
 
 ```
@@ -54,6 +58,9 @@ conf.z_move = True
 top10, top30, top50, top100 = gpnet_sim.simulate(conf)
 ```
 
-See `gpnet_sim/simulator.py` for complete list of arguments.
+You can also use custom objects for the simulation. For this, provide the argument
+`--objMeshRoot /path/to/urdf-files/`. For the simulation to work properly, the masses in kg should be multiplied by 
+a factor of `0.001`.
+See `gpnet_sim/simulator.py` for further arguments.
 
 Some statistics will be written on the console, the full results will be stored to a csv log file (at same location as input file).
