@@ -27,6 +27,6 @@ setuptools.setup(
     author='GPNet authors: Chaozheng Wu, Jian Chen, Qiaoyu Cao, Jianchi Zhang, Yunxin Tai, Lin Sun, and Kui Jia;' +
            'package author: Martin Rudorfer',
     author_email='m.rudorfer@bham.ac.uk',
-    description='GPNet simulator for robotic grapsing',
+    description='GPNet simulator for robotic grasping',
     long_description=long_description
 )
